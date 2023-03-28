@@ -3,6 +3,8 @@
 	name = "patch dispenser"
 	desc = "A dispenser that dispenses patches."
 	icon_state = "pill_press" //TODO SPRITE IT !!!!!!
+	active_power_usage = 80
+
 	var/patch_name = "factory patch"
 	var/patch_size = 40
 	///the icon_state number for the patch.
@@ -60,10 +62,11 @@
 /obj/machinery/plumbing/patch_dispenser/ui_act(action, params)
 	if(..())
 		return
-	. = TRUE
 	switch(action)
 		if("change_patch_size")
 			patch_size = CLAMP(text2num(params["volume"]), 0, 40)
+			. = TRUE
 		if("change_patch_name")
 			var/new_name = stripped_input(usr, "Enter a patch name.", name, patch_name)
 			patch_name = new_name + " patch"
+			. = TRUE

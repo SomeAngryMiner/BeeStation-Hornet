@@ -7,7 +7,7 @@
 	drag_slowdown = 1.5		// Same as a prone mob
 	max_integrity = 200
 	integrity_failure = 50
-	armor = list("melee" = 20, "bullet" = 10, "laser" = 10, "energy" = 0, "bomb" = 10, "bio" = 0, "rad" = 0, "fire" = 70, "acid" = 60)
+	armor = list("melee" = 20, "bullet" = 10, "laser" = 10, "energy" = 0, "bomb" = 10, "bio" = 0, "rad" = 0, "fire" = 70, "acid" = 60, "stamina" = 0)
 	var/icon_door = null
 	var/icon_door_override = FALSE //override to have open overlay use icon different to its base's
 	var/secure = FALSE //secure locker or not, also used if overriding a non-secure locker with a secure door overlay to add fancy lights
@@ -26,7 +26,7 @@
 	var/max_mob_size = MOB_SIZE_HUMAN //Biggest mob_size accepted by the container
 	var/mob_storage_capacity = 3 // how many human sized mob/living can fit together inside a closet.
 	var/storage_capacity = 30 //This is so that someone can't pack hundreds of items in a locker/crate then open it in a populated area to crash clients.
-	var/cutting_tool = /obj/item/weldingtool
+	var/cutting_tool = TOOL_WELDER
 	var/open_sound = 'sound/machines/closet_open.ogg'
 	var/close_sound = 'sound/machines/closet_close.ogg'
 	var/open_sound_volume = 35
@@ -40,7 +40,7 @@
 	var/is_animating_door = FALSE
 	var/door_anim_squish = 0.30
 	var/door_anim_angle = 136
-	var/door_hinge_x = -6.5
+	var/door_hinge = -6.5
 	var/door_anim_time = 2.0 // set to 0 to make the door not animate at all
 /obj/structure/closet/Initialize(mapload)
 	if(mapload && !opened)		// if closed, any item at the crate's loc is put in the contents
@@ -58,6 +58,8 @@
 	return ..()
 
 /obj/structure/closet/update_icon()
+	if(istype(src, /obj/structure/closet/supplypod))
+		return . = ..()
 	cut_overlays()
 	if(!opened)
 		layer = OBJ_LAYER
@@ -115,9 +117,9 @@
 
 /obj/structure/closet/proc/get_door_transform(angle)
 	var/matrix/M = matrix()
-	M.Translate(-door_hinge_x, 0)
+	M.Translate(-door_hinge, 0)
 	M.Multiply(matrix(cos(angle), 0, 0, -sin(angle) * door_anim_squish, 1, 0))
-	M.Translate(door_hinge_x, 0)
+	M.Translate(door_hinge, 0)
 	return M
 
 /obj/structure/closet/examine(mob/user)
@@ -267,11 +269,11 @@
 	else
 		return ..()
 
-/obj/structure/closet/proc/tool_interact(obj/item/W, mob/user)//returns TRUE if attackBy call shouldnt be continued (because tool was used/closet was of wrong type), FALSE if otherwise
+/obj/structure/closet/proc/tool_interact(obj/item/W, mob/user)//returns TRUE if attackBy call shouldn't be continued (because tool was used/closet was of wrong type), FALSE if otherwise
 	. = TRUE
 	if(opened)
-		if(istype(W, cutting_tool))
-			if(W.tool_behaviour == TOOL_WELDER)
+		if(W.tool_behaviour == cutting_tool)
+			if(cutting_tool == TOOL_WELDER)
 				if(!W.tool_start_check(user, amount=0))
 					return
 
@@ -326,7 +328,7 @@
 	return
 
 /obj/structure/closet/MouseDrop_T(atom/movable/O, mob/living/user)
-	if(!istype(O) || O.anchored || istype(O, /obj/screen))
+	if(!istype(O) || O.anchored || istype(O, /atom/movable/screen))
 		return
 	if(!istype(user) || user.incapacitated() || !(user.mobility_flags & MOBILITY_STAND))
 		return
@@ -358,8 +360,11 @@
 			var/mob/living/L = O
 			if(!issilicon(L))
 				L.Paralyze(40)
-			O.forceMove(T)
-			close()
+			if(istype(src, /obj/structure/closet/supplypod/extractionpod))
+				O.forceMove(src)
+			else
+				O.forceMove(T)
+				close()
 	else
 		O.forceMove(T)
 	return 1
@@ -454,7 +459,6 @@
 	open()
 
 /obj/structure/closet/AltClick(mob/user)
-	..()
 	if(!user.canUseTopic(src, BE_CLOSE) || !isturf(loc))
 		return
 	if(opened || !secure)
@@ -479,13 +483,13 @@
 							"<span class='notice'>You [locked ? null : "un"]lock [src].</span>")
 			update_icon()
 		else if(!silent)
-			to_chat(user, "<span class='notice'>Access Denied</span>")
+			to_chat(user, "<span class='notice'>Access Denied.</span>")
 	else if(secure && broken)
 		to_chat(user, "<span class='warning'>\The [src] is broken!</span>")
 
 /obj/structure/closet/emag_act(mob/user)
 	if(secure && !broken)
-		user.visible_message("<span class='warning'>Sparks fly from [src]!</span>",
+		user?.visible_message("<span class='warning'>Sparks fly from [src]!</span>",
 						"<span class='warning'>You scramble [src]'s lock, breaking it open!</span>",
 						"<span class='italics'>You hear a faint electrical spark.</span>")
 		playsound(src, "sparks", 50, 1)
@@ -495,7 +499,7 @@
 
 /obj/structure/closet/get_remote_view_fullscreens(mob/user)
 	if(user.stat == DEAD || !(user.sight & (SEEOBJS|SEEMOBS)))
-		user.overlay_fullscreen("remote_view", /obj/screen/fullscreen/impaired, 1)
+		user.overlay_fullscreen("remote_view", /atom/movable/screen/fullscreen/impaired, 1)
 
 /obj/structure/closet/emp_act(severity)
 	. = ..()
@@ -516,9 +520,14 @@
 				req_access += pick(get_all_accesses())
 
 /obj/structure/closet/contents_explosion(severity, target)
-	for(var/atom/A in contents)
-		A.ex_act(severity, target)
-		CHECK_TICK
+	for(var/thing in contents)
+		switch(severity)
+			if(EXPLODE_DEVASTATE)
+				SSexplosions.high_mov_atom += thing
+			if(EXPLODE_HEAVY)
+				SSexplosions.med_mov_atom += thing
+			if(EXPLODE_LIGHT)
+				SSexplosions.low_mov_atom += thing
 
 /obj/structure/closet/singularity_act()
 	dump_contents()

@@ -46,7 +46,7 @@
 	helptext = "We reform one of our limbs as an autonomous snake-like creature. This grotesque display may ward off attackers, and the creature will inject them with incapacitating poison."
 	button_icon_state = "limbsnake"
 	chemical_cost = 15
-	dna_cost = 1
+	dna_cost = 2
 	req_human = TRUE
 	req_stat = DEAD
 	ignores_fakedeath = TRUE
@@ -71,7 +71,7 @@
 	//text message
 	C.visible_message("<span class='warning'>[user]'s [BP] detaches itself and takes the form of a snake!</span>",
 			"<span class='userdanger'>Our [BP] forms into a horrifying snake and heads towards our attackers!</span>")
-	BP.set_disabled(TRUE)
+	BP.dismember()
 	BP.Destroy()
 	C.update_mobility()
 	//Deploy limbsnake
@@ -85,7 +85,7 @@
 	desc = "This is no snake at all! It looks like someone's limb grew fangs out of it's fingers and it's out to bite anyone!"
 	icon_state = "snake"
 	icon_living = "snake"
-	del_on_death = 1
+	del_on_death = TRUE
 	speak_emote = list("gargles")
 	health = 50
 	maxHealth = 50
@@ -101,7 +101,9 @@
 	mob_biotypes = list(MOB_ORGANIC, MOB_BEAST)
 	obj_damage = 0
 	environment_smash = ENVIRONMENT_SMASH_NONE
-	mobsay_color = "#26F55A"
+	chat_color = "#26F55A"
+	mobchatspan = "chaplain"
 	faction = list("hostile","creature")
 	poison_per_bite = 4
 	poison_type = /datum/reagent/toxin/staminatoxin
+	discovery_points = 1000

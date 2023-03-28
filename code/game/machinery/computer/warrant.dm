@@ -19,11 +19,15 @@
 			var/background
 			var/notice = ""
 			switch(current.fields["criminal"])
-				if("*Arrest*")
+				if("Arrest")
 					background = "background-color:#990000;"
 					notice = "<br>**REPORT TO THE BRIG**"
 				if("Incarcerated")
 					background = "background-color:#CD6500;"
+				if("Search")
+					background = "'background-color:#9B13EB;'"
+				if("Monitor")
+					background = "'background-color:#990000;'"
 				if("Paroled")
 					background = "background-color:#CD6500;"
 				if("Discharged")
@@ -67,7 +71,7 @@
 				dat += "</tr>"
 			dat += "</table>"
 
-			dat += "<br>Minor Crimes:"
+			dat += "<br>Crimes:"
 			dat +={"<table style="text-align:center;" border="1" cellspacing="0" width="100%">
 			<tr>
 			<th>Crime</th>
@@ -75,23 +79,7 @@
 			<th>Author</th>
 			<th>Time Added</th>
 			</tr>"}
-			for(var/datum/data/crime/c in current.fields["mi_crim"])
-				dat += {"<tr><td>[c.crimeName]</td>
-				<td>[c.crimeDetails]</td>
-				<td>[c.author]</td>
-				<td>[c.time]</td>
-				</tr>"}
-			dat += "</table>"
-
-			dat += "<br>Major Crimes:"
-			dat +={"<table style="text-align:center;" border="1" cellspacing="0" width="100%">
-			<tr>
-			<th>Crime</th>
-			<th>Details</th>
-			<th>Author</th>
-			<th>Time Added</th>
-			</tr>"}
-			for(var/datum/data/crime/c in current.fields["ma_crim"])
+			for(var/datum/data/crime/c in current.fields["crim"])
 				dat += {"<tr><td>[c.crimeName]</td>
 				<td>[c.crimeDetails]</td>
 				<td>[c.author]</td>
@@ -113,8 +101,11 @@
 	var/mob/M = usr
 	switch(href_list["choice"])
 		if("Login")
+			if(iscyborg(M))		//cyborgs cannot be set to arrest
+				return
 			var/obj/item/card/id/scan = M.get_idcard(TRUE)
-			authenticated = scan.registered_name
+			if(scan)
+				authenticated = scan.registered_name
 			if(authenticated)
 				for(var/datum/data/record/R in GLOB.data_core.security)
 					if(R.fields["name"] == authenticated)

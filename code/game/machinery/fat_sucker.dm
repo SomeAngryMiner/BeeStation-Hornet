@@ -12,7 +12,7 @@
 	var/start_at = NUTRITION_LEVEL_WELL_FED
 	var/stop_at = NUTRITION_LEVEL_STARVING
 	var/free_exit = TRUE //set to false to prevent people from exiting before being completely stripped of fat
-	var/bite_size = 15 //amount of nutrients we take per process
+	var/bite_size = 7.5 //amount of nutrients we take per second
 	var/nutrients //amount of nutrients we got build up
 	var/nutrient_to_meat = 90 //one slab of meat gives about 52 nutrition
 	var/datum/looping_sound/microwave/soundloop //100% stolen from microwaves
@@ -33,6 +33,10 @@
 	soundloop = new(list(src),  FALSE)
 	update_icon()
 
+/obj/machinery/fat_sucker/Destroy()
+	QDEL_NULL(soundloop)
+	return ..()
+
 /obj/machinery/fat_sucker/RefreshParts()
 	..()
 	var/rating = 0
@@ -46,9 +50,9 @@
 
 /obj/machinery/fat_sucker/examine(mob/user)
 	. = ..()
-	. += {"<span class='notice'>Alt-Click to toggle the safety hatch.</span>
-				<span class='notice'>Removing [bite_size] nutritional units per operation.</span>
-				<span class='notice'>Requires [nutrient_to_meat] nutritional units per meat slab.</span>"}
+	. += "<span class='notice'>Alt-Click to toggle the safety hatch.</span>\n"+\
+			"<span class='notice'>Removing [bite_size] nutritional units per operation.</span>\n"+\
+			"<span class='notice'>Requires [nutrient_to_meat] nutritional units per meat slab.</span>"
 
 /obj/machinery/fat_sucker/close_machine(mob/user)
 	if(panel_open)
@@ -131,10 +135,10 @@
 	if(panel_open)
 		overlays += "[icon_state]_panel"
 
-/obj/machinery/fat_sucker/process()
+/obj/machinery/fat_sucker/process(delta_time)
 	if(!processing)
 		return
-	if(!powered() || !occupant || !iscarbon(occupant))
+	if(!is_operational() || !occupant || !iscarbon(occupant))
 		open_machine()
 		return
 
@@ -143,8 +147,8 @@
 		open_machine()
 		playsound(src, 'sound/machines/microwave/microwave-end.ogg', 100, FALSE)
 		return
-	C.adjust_nutrition(-bite_size)
-	nutrients += bite_size
+	C.adjust_nutrition(-bite_size * delta_time)
+	nutrients += bite_size * delta_time
 
 	if(next_fact <= 0)
 		next_fact = initial(next_fact)
@@ -155,7 +159,7 @@
 	use_power(500)
 
 /obj/machinery/fat_sucker/proc/start_extracting()
-	if(state_open || !occupant || processing || !powered())
+	if(state_open || !occupant || processing || !is_operational())
 		return
 	if(iscarbon(occupant))
 		var/mob/living/carbon/C = occupant

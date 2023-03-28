@@ -18,7 +18,7 @@ GLOBAL_LIST_INIT(valid_keys, list(
 	"GamepadStart" = 1, "GamepadSelect" = 1, "Gamepad2Up" = 1, "Gamepad2Down" = 1, "Gamepad2Left" = 1, "Gamepad2Right" = 1, "Gamepad2DownLeft" = 1,
 	"Gamepad2DownRight" = 1, "Gamepad2UpLeft" = 1, "Gamepad2UpRight" = 1, "Gamepad2Face1" = 1, "Gamepad2Face2" = 1, "Gamepad2Face3" = 1, "Gamepad2Face4" = 1,
 	"Gamepad2R1" = 1, "Gamepad2R2" = 1, "Gamepad2R3" = 1, "Gamepad2L1" = 1, "Gamepad2L2" = 1, "Gamepad2L3" = 1,	"Gamepad2Start" = 1, "Gamepad2Select" = 1,
-	"Gamepad3Up" = 1, "Gamepad3Down" = 1, "Gamepad3Left" = 1, "Gamepad3Right" = 1, "Gamepad3DownLeft" = 1, "Gamepad3DownRight" = 1, "Gamepad3UpLeft" = 1, 
+	"Gamepad3Up" = 1, "Gamepad3Down" = 1, "Gamepad3Left" = 1, "Gamepad3Right" = 1, "Gamepad3DownLeft" = 1, "Gamepad3DownRight" = 1, "Gamepad3UpLeft" = 1,
 	"Gamepad3UpRight" = 1, "Gamepad3Face1" = 1, "Gamepad3Face2" = 1, "Gamepad3Face3" = 1, "Gamepad3Face4" = 1, "Gamepad3R1" = 1, "Gamepad3R2" = 1, "Gamepad3R3" = 1,
 	"Gamepad3L1" = 1, "Gamepad3L2" = 1, "Gamepad3L3" = 1, "Gamepad3Start" = 1, "Gamepad3Select" = 1, "Gamepad4Up" = 1, "Gamepad4Down" = 1, "Gamepad4Left" = 1,
 	"Gamepad4Right" = 1, "Gamepad4DownLeft" = 1,"Gamepad4DownRight" = 1, "Gamepad4UpLeft" = 1, "Gamepad4UpRight" = 1, "Gamepad4Face1" = 1, "Gamepad4Face2" = 1,
@@ -34,8 +34,8 @@ GLOBAL_LIST_INIT(valid_keys, list(
 		log_admin("[key_name(C)] just attempted to send an invalid keypress with length over 32 characters, likely malicious.")
 		message_admins("Mob [(C.mob)] with the ckey [(C.ckey)] just attempted to send an invalid keypress with length over 32 characters, likely malicious.")
 	else
-		log_admin_private("[key_name(C)] just attempted to send an invalid keypress - \"[key]\", possibly malicious.")
-		message_admins("Mob [(C.mob)] with the ckey [(C.ckey)] just attempted to send an invalid keypress - \"[key]\", possibly malicious.")
+		log_admin_private("[key_name(C)] just attempted to send an invalid keypress - \"[key]\".")
+		message_admins("Mob [(C.mob)] with the ckey [(C.ckey)] just attempted to send an invalid keypress - \"[sanitize(key)]\".")
 
 	return TRUE
 
@@ -48,7 +48,7 @@ GLOBAL_LIST_INIT(valid_keys, list(
 
 	keys_held[_key] = world.time
 	var/movement = SSinput.movement_keys[_key]
-	if(!(next_move_dir_sub & movement) && !keys_held["Ctrl"])
+	if(!(next_move_dir_sub & movement) && !movement_locked)
 		next_move_dir_add |= movement
 
 	// Client-level keybindings are ones anyone should be able to do at any time
@@ -70,9 +70,9 @@ GLOBAL_LIST_INIT(valid_keys, list(
 			break
 
 	if(holder)
-		holder.key_down(full_key, src)
+		holder.key_down(_key, src)  //full_key is not necessary here, _key is enough
 	if(mob.focus)
-		mob.focus.key_down(full_key, src)
+		mob.focus.key_down(_key, src) //same as above
 
 /client/verb/keyUp(_key as text)
 	set instant = TRUE
@@ -101,10 +101,3 @@ GLOBAL_LIST_INIT(valid_keys, list(
 		holder.key_up(_key, src)
 	if(mob.focus)
 		mob.focus.key_up(_key, src)
-
-// Called every game tick
-/client/keyLoop()
-	if(holder)
-		holder.keyLoop(src)
-	if(mob?.focus)
-		mob.focus.keyLoop(src)
